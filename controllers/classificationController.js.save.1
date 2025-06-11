@@ -1,0 +1,61 @@
+const tf = require('@tensorflow/tfjs-node');
+const fs = require('fs');
+const path = require('path');
+
+// Path ke model
+const modelPath = path.join(
+  __dirname,
+  '../resources/ResNet-50_tomato-leaf-disease-tfjs_nobg/model.json'
+);
+
+let model;
+
+const loadModel = async () => {
+  try {
+    model = await tf.loadLayersModel(`file://${modelPath}`);
+    console.log('Model loaded successfully.');
+  } catch (err) {
+    console.error('Error loading model:', err);
+    throw new Error('Model loading failed.');
+  }
+};
+
+loadModel();
+
+const preprocessImage = async (imagePath) => {
+  const imageBuffer = fs.readFileSync(imagePath);
+  let tensor = tf.node.decodeImage(imageBuffer, 3);
+  tensor = tf.image.resizeBilinear(tensor, [224, 224]);
+  tensor = tensor.expandDims(0);
+  //tensor = tensor.toFloat().div(tf.scalar(255.0));
+  return tensor;
+};
+
+// Fungsi untuk mengklasifikasikan gambar
+const classifyImage = async (imagePath) => {
+  try {
+    const classes = [
+      'bacterial_spot',
+      'healthy',
+      'late_blight',
+      'leaf_curl_virus',
+      'leaf_mold',
+      'mosaic_virus',
+      'septoria_leaf_spot',
+    ];
+
+    const tensor = await preprocessImage(imagePath);
+    const predictions = model.predict(tensor);
+    const predictedClassIndex = predictions.argMax(-1).dataSync()[0];
+
+    // Ambil nama kelas berdasarkan indeks
+    const predictedClassName = classes[predictedClassIndex];
+
+    return { index: predictedClassIndex, class: predictedClassName };
+  } catch (err) {
+    console.error('Error during classification:', err);
+    throw new Error('Error during classification.');
+  }
+};
+
+module.exports = { classifyImage };
