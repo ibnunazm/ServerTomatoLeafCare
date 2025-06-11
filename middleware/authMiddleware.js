@@ -10,8 +10,8 @@ function basicAuth(req, res, next) {
     const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
     const [username, password] = credentials.split(':');
 
-    const USERNAME = 'rahasia';
-    const PASSWORD = 'tomat';
+    const USERNAME = '******';
+    const PASSWORD = '******';
 
     if (username === USERNAME && password === PASSWORD) {
         next();
